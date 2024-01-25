@@ -1,27 +1,65 @@
 package com.dc.retrofitdemo.presentation_layer
 
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.dc.retrofitdemo.presentation_layer.ui.componentes.ImagePicker
+import com.dc.retrofitdemo.presentation_layer.ui.componentes.IndeterminateCircularIndicator
+import com.dc.retrofitdemo.presentation_layer.ui.model.StatusXX
 import com.dc.retrofitdemo.presentation_layer.ui.theme.RetrofitDemoTheme
+import com.dc.retrofitdemo.utils.convertBitmapToBase64
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
 
 class MainActivity : ComponentActivity() {
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val imageState = mutableStateOf(Uri.parse(""));
+        val imageStateInBase64 = mutableStateOf("");
+
+        val retroViewModel: RetroViewModel by viewModels()
         setContent {
             RetrofitDemoTheme {
                 // A surface container using the 'background' color from the theme
@@ -30,41 +68,71 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
 
-                    val retroViewModel: RetroViewModel by viewModels()
-
+                    if (retroViewModel.loading.value) {
+                        IndeterminateCircularIndicator(retroViewModel.loading.value)
+                    }
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = retroViewModel.quoteState.value.toString())
 
-                        Button(onClick = {
+                        Column(
+                            modifier = Modifier.weight(0.9f),
+                        ) {
+                            Log.e("XYZ", retroViewModel.productInfo.value.outputs.toString())
+                            if (retroViewModel.productInfo.value.outputs.isNotEmpty() && !retroViewModel.loading.value) {
+                                LazyColumn(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.Start,
+                                    verticalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    items(retroViewModel.productInfo.value.outputs.get(0).data.regions) {
 
-                            retroViewModel.getQuoteResult()
+                                        it.data.concepts.forEach {
+                                            Card(
+                                                modifier = Modifier
+                                                    .padding(4.dp),
+                                                elevation = CardDefaults.cardElevation(
+                                                    defaultElevation = 4.dp
+                                                ),
+                                                border = BorderStroke(1.dp, Color.Magenta)
+                                            ) {
+                                                Text(
+                                                    text = "Value (%) -> ${it.value}",
+                                                    modifier = Modifier.padding(8.dp),
+                                                    textAlign = TextAlign.Center
+                                                )
+                                                Text(
+                                                    text = "Product Name -> ${it.name}",
+                                                    modifier = Modifier.padding(8.dp)
+                                                )
+                                            }
+                                        }
+                                    }
 
-                        }) {
-                            Text(text = "Fetch Result")
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.size(10.dp))
+                        Column(
+                            modifier = Modifier.weight(0.1f)
+                        ) {
+                            ImagePicker {
 
-                        Text(text = retroViewModel.ramdomQuoteResultState.value.toString())
-
-                        Button(onClick = {
-
-                            retroViewModel.getRandomQuoteResult()
-
-                        }) {
-                            Text(text = "Fetch Random Result")
+                                imageStateInBase64.value = convertBitmapToBase64(it)
+                                imageState.value = Uri.parse(imageStateInBase64.value)
+                                retroViewModel.getProductInfo(imageStateInBase64.value)
+                            }
                         }
                     }
-
-
-
                 }
             }
         }
     }
+
 }
+
+
+
 

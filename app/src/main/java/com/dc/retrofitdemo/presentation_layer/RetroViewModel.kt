@@ -1,41 +1,51 @@
 package com.dc.retrofitdemo.presentation_layer
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dc.retrofitdemo.data_layer.QuoteApi
-import com.dc.retrofitdemo.data_layer.RetrofitHelper
-import com.dc.retrofitdemo.presentation_layer.ui.model.Quotes
-import com.dc.retrofitdemo.presentation_layer.ui.model.Result
+import com.dc.retrofitdemo.data_layer.remote.ProductApi
+import com.dc.retrofitdemo.data_layer.remote.RetrofitHelper
+import com.dc.retrofitdemo.presentation_layer.ui.model.Product
+import com.dc.retrofitdemo.presentation_layer.ui.model.StatusXX
+import com.dc.retrofitdemo.presentation_layer.ui.model.request_model.Data
+import com.dc.retrofitdemo.presentation_layer.ui.model.request_model.Image
+import com.dc.retrofitdemo.presentation_layer.ui.model.request_model.Input
+import com.dc.retrofitdemo.presentation_layer.ui.model.request_model.RequestBody
 import kotlinx.coroutines.launch
 
-class RetroViewModel: ViewModel() {
+class RetroViewModel : ViewModel() {
 
-    val retro = RetrofitHelper.retrofit.create(QuoteApi::class.java)
+    val produtApi = RetrofitHelper.retrofitApi.create(ProductApi::class.java)
 
-    var quoteState = mutableStateOf(Quotes(0,0,0, emptyList(), 0, 0 ))
-    var ramdomQuoteResultState = mutableStateOf(Result("","","","","","",0, emptyList()))
+    val loading = mutableStateOf(false)
 
-    fun getQuoteResult(){
+    var productInfo = mutableStateOf(Product(emptyList(), StatusXX()))
+
+    fun getProductInfo(imageStateInBase64: String) {
+        loading.value = true;
         viewModelScope.launch {
             try {
-                if (retro.getQuotes().body() != null) {
-                    quoteState.value = retro.getQuotes().body()!!
-                }
+                productInfo.value = produtApi.getProductInfo(
+                    RequestBody(
+                        listOf(
+                            Input(
+                                Data(
+                                    Image(
+                                        imageStateInBase64
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ).body()!!
 
-            }catch (e: Exception){
-                e.printStackTrace()
-            }
-        }
-    }
-    fun getRandomQuoteResult(){
-        viewModelScope.launch {
-            try {
-                if (retro.getRandomQuotes().body() != null) {
-                    ramdomQuoteResultState.value = retro.getRandomQuotes().body()!!
-                }
+                loading.value = false
 
-            }catch (e: Exception){
+                Log.e("xyzabc", "ProductInfo.value (VM) ->  ${productInfo.value}")
+
+            } catch (e: Exception) {
+                loading.value = false
                 e.printStackTrace()
             }
         }
