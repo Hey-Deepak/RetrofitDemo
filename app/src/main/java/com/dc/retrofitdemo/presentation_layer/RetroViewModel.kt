@@ -42,8 +42,6 @@ class RetroViewModel : ViewModel() {
 
                 loading.value = false
 
-                Log.e("xyzabc", "ProductInfo.value (VM) ->  ${productInfo.value}")
-
             } catch (e: Exception) {
                 loading.value = false
                 e.printStackTrace()
